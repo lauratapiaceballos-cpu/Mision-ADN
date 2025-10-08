@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión ADN</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Iconos (Lucide Icons) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Configuración de la fuente Inter y colores temáticos -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #1a1a2e; /* Fondo oscuro, alta tecnología */
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden; 
+        }
+        #app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem; 
+        }
+        
+        /* Gradiente de ADN - Neon Green */
+        .dna-gradient { 
+            background: linear-gradient(135deg, #34d399 0%, #059669 100%); 
+        }
+        .text-dna-gradient {
+            background-image: linear-gradient(45deg, #34d399, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Contenedor principal del tablero estilo Tech/Lab */
+        #board-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            padding: 0.5rem;
+        }
+
+        #board-container {
+            width: 100%;
+            height: 100%;
+            max-width: 680px; 
+            max-height: 680px;
+            aspect-ratio: 1 / 1;
+            margin: auto;
+            border: 10px solid #1f2937; /* Borde oscuro */
+            border-radius: 30px;
+            box-shadow: 0 15px 40px rgba(52, 211, 153, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1);
+            background-color: #2f3643; /* Fondo del tablero más oscuro */
+        }
+
+        /* Lógica de Grid del tablero */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            grid-template-rows: repeat(11, 1fr);
+            height: 100%;
+            width: 100%;
+        }
+        
+        .board-space {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2px;
+            font-size: 0.7rem;
+            cursor: default;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1); /* Líneas de cuadrícula sutiles */
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+            color: #d1d5db; /* Texto claro */
+        }
+
+        /* Estilos de las Zonas */
+        .zone-problem { background-color: #3f1a1a; border-color: #ef4444; } 
+        .zone-lab { background-color: #1a2b40; border-color: #3b82f6; } 
+        .zone-test { background-color: #40341a; border-color: #f59e0b; } 
+        .zone-impact { background-color: #1a402d; border-color: #10b981; } 
+        .zone-event { background-color: #581c87; color: white; border-color: #a855f7; font-weight: bold; }
+        .corner {
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: 3px solid #34d399 !important;
+            background-color: #2f3643;
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.4);
+            z-index: 5; 
+        }
+        .player-token {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 50%;
+            font-size: 14px; font-weight: bold; color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,255,255,0.3);
+            border: 3px solid white;
+            position: absolute; 
+            z-index: 10;
+            pointer-events: none;
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), box-shadow 0.3s ease; /* Movimiento más elástico */
+        }
+        .player-token:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.7);
+        }
+
+        #center-content {
+            grid-column: 2 / 11;
+            grid-row: 2 / 11;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: #1e293b; /* Fondo central oscuro */
+            border: 4px dashed #34d399; /* Borde neón */
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- Estilos y Animación de Cartas --- */
+        @keyframes dealCard {
+            0% { transform: scale(0.1) rotateZ(-30deg) translateY(-200px); opacity: 0; }
+            100% { transform: scale(1) rotateZ(0deg) translateY(0); opacity: 1; }
+        }
+        .deal-animation {
+            animation: dealCard 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Estilo para el botón de lanzamiento */
+        .roll-btn-style {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .roll-btn-style:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="h-screen flex flex-col overflow-hidden">
+    <!-- Encabezado (Altura Fija) -->
+    <header class="w-full text-center mb-6 flex-shrink-0">
+        <h1 class="text-4xl font-extrabold p-4 rounded-3xl shadow-2xl transition duration-300 bg-white/10 backdrop-blur-sm border-b border-green-500/50">
+            <span class="text-dna-gradient">🧬 Misión ADN Verde 🔬</span>
+        </h1>
+    </header>
+
+    <!-- Contenido Principal (Ocupa el resto del espacio) -->
+    <div id="main-content" class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
+        
+        <!-- COLUMNA IZQUIERDA: Controles y Log -->
+        <div class="flex flex-col overflow-hidden space-y-6">
+            <!-- Panel de Controles -->
+            <div id="game-controls" class="p-5 bg-white rounded-2xl shadow-2xl border-l-8 border-green-500 flex-shrink-0 text-gray-900">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2 flex items-center text-gray-900">
+                    <span class="mr-2" data-lucide="hand"></span> Controles del Jugador
+                </h2>
+                
+                <div id="player-info" class="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-inner">
+                    <!-- Información del jugador humano aquí -->
+                </div>
+                
+                <!-- Botones de Acción -->
+                <div id="action-buttons" class="space-y-4">
+                    <button id="roll-dice-btn" onclick="rollDiceAndMove()" class="w-full py-4 text-xl roll-btn-style font-extrabold text-white dna-gradient rounded-xl shadow-lg hover:shadow-green-400/50 disabled:opacity-50 disabled:bg-gray-400 flex items-center justify-center">
+                        Lanzar Dado <span id="dice-display" class="ml-3 bg-white text-green-700 p-1 px-3 rounded-full font-black text-lg">(0)</span>
+                    </button>
+                    <button id="reset-game-btn" onclick="resetGame()" class="w-full py-3 text-md font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition duration-150 shadow-md hidden">
+                        Reiniciar Juego
+                    </button>
+                </div>
+                <p id="turn-status" class="mt-4 text-center text-md text-gray-300 font-medium"></p>
+            </div>
+
+            <!-- Log de Eventos -->
+            <div class="flex-grow p-5 bg-white rounded-2xl shadow-lg border-t-4 border-gray-300 overflow-y-auto min-h-[150px] text-gray-900">
+                <h2 class="text-xl font-bold mb-3 text-gray-800 flex items-center">
+                    <span class="mr-2" data-lucide="scroll-text"></span> Registro de Eventos
+                </h2>
+                <ul id="game-log" class="text-sm space-y-2">
+                    <li class="text-gray-500">...Esperando inicialización...</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- COLUMNA DERECHA: Tablero de Juego -->
+        <div class="lg:col-span-2 flex items-center justify-center">
+            <div id="board-wrapper" class="relative">
+                <div id="board-container" class="relative">
+                    <h2 class="sr-only">Tablero de Misión</h2>
+                    <div id="board">
+                        <div id="center-content" class="text-white">
+                            <div class="text-5xl mb-3 text-green-400" data-lucide="dna"></div>
+                            <h3 class="text-2xl font-extrabold text-white">Misión ADN Verde</h3>
+                            <p class="text-base text-gray-400 mt-2">Primer jugador en cumplir:</p>
+                            <p class="text-lg font-bold mt-1">
+                                Recoger <span class="text-green-400">3 Genes</span> y superar <span class="text-orange-400">2 Pruebas</span>.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Contenedor para las fichas de los jugadores (se posicionan absolutamente) -->
+                    <div id="tokens-container" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modals -->
+    <div id="modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden items-center justify-center p-4 z-50 transition-opacity">
+        <div id="modal-content" class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center transform scale-100 transition-transform border-t-8 border-green-500 text-gray-900">
+            <h3 id="modal-title" class="text-4xl font-extrabold text-green-600 mb-4">¡VICTORIA!</h3>
+            <p id="modal-message" class="text-xl text-gray-700 mb-6 font-medium">Un jugador ha creado una súper planta.</p>
+            <button onclick="hideModal()" class="py-3 px-8 dna-gradient text-white font-semibold rounded-lg hover:shadow-xl transition duration-150 shadow-lg">Entendido</button>
+        </div>
+    </div>
+
+    <div id="card-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 hidden items-center justify-center p-4 z-50">
+        <div id="card-content" class="w-full max-w-xs p-6 rounded-xl shadow-2xl text-center transform scale-100 deal-animation">
+            <!-- Contenido de la carta se inyectará aquí -->
+        </div>
+    </div>
+
+</div>
+
+<script>
+    
+    // --- VARIABLES GLOBALES DE UI (cachear referencias DOM para evitar errores de timing) ---
+    let gameState = null;
+    let rollBtn, resetBtn, turnStatus, diceDisplay, playerInfoDiv, cardModal, cardContent;
+    let isGameRunning = false; // Bloqueo para evitar acciones durante los turnos automáticos (IA/Skips)
+
+    // --- CONSTANTES DEL JUEGO ---
+    const TOTAL_SPACES = 40;
+    const ZONES = ['Problem', 'Event', 'Lab', 'Test', 'Impact']; 
+    const ZONE_COLORS = {
+        // Colores temáticos oscuros para las casillas
+        Problem: 'zone-problem bg-red-800/20 text-red-300', 
+        Lab: 'zone-lab bg-blue-800/20 text-blue-300', 
+        Test: 'zone-test bg-yellow-800/20 text-yellow-300', 
+        Impact: 'zone-impact bg-green-800/20 text-green-300', 
+        Event: 'zone-event bg-purple-800/40 text-white font-bold'
+    };
+    const ZONE_NAMES = {
+        Problem: 'Problema (Plagas)',
+        Lab: 'Laboratorio (Genes)',
+        Test: 'Zona de Prueba (Eventos)',
+        Impact: 'Impacto (Resultado Final)',
+        Event: 'EVENTO DE MUTACIÓN (Carta)'
+    };
+    const SPECIAL_EVENT_SPACES = [5, 15, 25, 35]; 
+    const GENES = ['Resistencia al Frío', 'Anti-Hongos', 'Crecimiento Rápido', 'Tolerancia a Sequía', 'Producción de Fruto', 'Autodefensa'];
+    const PLAGAS = ['Gusano Destructor', 'Hongo Mutante', 'Pulgón Invasor', 'Virus Latente'];
+    const TESTS = ['Plaga Ataca tus Hojas (Falla)', 'Tormenta Daña tus Cultivos (Falla)', 'La Planta Sobrevive y Florece (Éxito)', 'Financiación Retrasada (Falla)'];
+    const PLAYER_COLORS = ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500'];
+
+    // Definición de las Cartas de Mutación
+    const ACTION_CARDS = [
+        { type: 'Heist', title: '🧬 Robo Genético', effect: 'Roba un Gen a otro jugador si lo tiene.', color: 'bg-red-500', icon: '🔪', cardBg: 'bg-red-900 shadow-red-500/50' },
+        { type: 'Defense', title: '🛡️ Gen de Barrera', effect: 'Estás a salvo de penalizaciones en el próximo turno.', color: 'bg-blue-500', icon: '🧱', cardBg: 'bg-blue-900 shadow-blue-500/50' },
+        { type: 'Skip', title: '🧪 Contaminación', effect: 'Pierdes 1 turno por error de protocolo.', color: 'bg-yellow-500', icon: '🛑', cardBg: 'bg-yellow-900 shadow-yellow-500/50' },
+        { type: 'BonusGene', title: '🌱 Gen de Regalo', effect: 'Recibes un gen extra (si hay disponibles) al instante.', color: 'bg-green-500', icon: '🎁', cardBg: 'bg-green-900 shadow-green-500/50' }
+    ];
+
+    // --- FUNCIONES DE UTILIDAD ---
+
+    // Función de retardo (para simular el pensamiento de la IA)
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Simula el lanzamiento de un dado de 6 caras
+    const rollDice = () => Math.floor(Math.random() * 6) + 1;
+
+    // Función para mostrar el modal (genérico)
+    window.showModal = (title, message) => {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').innerHTML = message;
+        document.getElementById('modal').classList.remove('hidden');
+        document.getElementById('modal').classList.add('flex');
+    };
+
+    // Función para ocultar el modal (genérico)
+    window.hideModal = () => {
+        document.getElementById('modal').classList.add('hidden');
+        document.getElementById('modal').classList.remove('flex');
+    };
+
+    // Ocultar el modal de cartas (accesible globalmente)
+    window.hideCardModal = () => {
+        if(cardModal) {
+            cardModal.classList.add('hidden');
+            cardModal.classList.remove('flex');
+        }
+    }
+
+    // Actualiza el registro de eventos
+    const updateLog = (message) => {
+        const logElement = document.getElementById('game-log');
+        const newItem = document.createElement('li');
+        newItem.innerHTML = `<span class="text-green-600 font-semibold text-xs">${new Date().toLocaleTimeString()}</span>: ${message}`;
+        logElement.prepend(newItem);
+        logElement.scrollTop = 0;
+        while (logElement.children.length > 50) {
+            logElement.removeChild(logElement.lastChild);
+        }
+        // Llamar a Lucide para renderizar los iconos si hay
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    };
+    
+    // --- LÓGICA DE JUEGO PRINCIPAL ---
+
+    // Determina la zona actual
+    const getZone = (position) => {
+        if (SPECIAL_EVENT_SPACES.includes(position)) {
+            return 'Event';
+        }
+        if (position >= 0 && position < 10) return 'Problem';
+        if (position >= 10 && position < 20) return 'Lab';
+        if (position >= 20 && position < 30) return 'Test';
+        if (position >= 30 && position < 40) return 'Impact';
+        return 'Problem'; // Fallback
+    };
+
+    // Dibuja el tablero (Añadido más detalle visual)
+    const drawBoard = () => {
+        const boardElement = document.getElementById('board');
+        const centerContent = document.getElementById('center-content');
+        boardElement.innerHTML = '';
+        if (centerContent) {
+            boardElement.appendChild(centerContent);
+        }
+
+        for (let i = 0; i < TOTAL_SPACES; i++) {
+            const zone = getZone(i);
+            const zoneClasses = ZONE_COLORS[zone];
+            let content = '';
+            let specialClass = '';
+            let gridStyles = {};
+
+            const isCorner = i % 10 === 0;
+            const isEvent = SPECIAL_EVENT_SPACES.includes(i);
+            
+            // Títulos y contenido
+            if (i === 0) { 
+                content = 'START / PLAGA'; specialClass += ' corner text-green-300';
+            }
+            else if (i === 10) { content = 'LABORATORIO'; specialClass += ' corner text-blue-300'; }
+            else if (i === 20) { content = 'PRUEBAS'; specialClass += ' corner text-yellow-300'; }
+            else if (i === 30) { content = 'IMPACTO'; specialClass += ' corner text-red-300'; }
+            else if (isEvent) { content = '¡ROBA CARTA!'; specialClass += ' zone-event'; }
+            
+            // Definición de las posiciones en la cuadrícula (11x11)
+            if (i >= 0 && i < 10) { gridStyles = { 'column': 11 - i, 'row': '11' }; } 
+            else if (i >= 10 && i < 20) { gridStyles = { 'column': '1', 'row': 11 - (i - 10) }; } 
+            else if (i >= 20 && i < 30) { gridStyles = { 'column': i - 20 + 1, 'row': '1' }; } 
+            else if (i >= 30 && i < 40) { gridStyles = { 'column': '11', 'row': i - 30 + 1 }; }
+
+            const cell = document.createElement('div');
+            cell.id = `space-${i}`;
+            
+            const styleString = Object.entries(gridStyles)
+                .map(([key, value]) => `grid-${key}: ${value}`)
+                .join('; ');
+            
+            cell.style.cssText = styleString;
+
+            const zoneDisplay = isCorner || isEvent ? '' : ZONE_NAMES[zone].split('(')[0].trim(); 
+
+            cell.className = `board-space relative transition-all duration-300 ${zoneClasses} ${isCorner ? 'corner' : ''} ${specialClass}`;
+            
+            const zoneLabel = zoneDisplay ? `<div class="text-[0.6rem] font-semibold opacity-70">${zoneDisplay}</div>` : '';
+            const contentLabel = content ? `<div class="text-[0.7rem] font-bold mt-0.5">${content}</div>` : '';
+
+            cell.innerHTML = `
+                <span class="font-black text-xs absolute top-1 left-1 bg-white/10 px-1 rounded shadow-sm text-gray-300">${i}</span>
+                ${zoneLabel}
+                ${contentLabel}
+            `;
+            boardElement.appendChild(cell);
+        }
+        
+        // Renderizar iconos después de que se cargue el DOM
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    };
+
+    // Dibuja los tokens de los jugadores en el tablero (Ajustado para tamaño)
+    const drawTokens = () => {
+        if (!gameState) return;
+
+        const tokensContainer = document.getElementById('tokens-container');
+        tokensContainer.innerHTML = '';
+        const boardContainer = document.getElementById('board-container');
+        if (!boardContainer) return;
+
+        gameState.players.forEach((player, index) => {
+            const spaceElement = document.getElementById(`space-${player.position}`);
+            if (spaceElement) {
+                const token = document.createElement('div');
+                token.id = `token-${player.id}`;
+                token.className = 'player-token absolute transition-all duration-700 ease-in-out';
+                
+                const bgColor = PLAYER_COLORS[index % PLAYER_COLORS.length];
+
+                // Resaltar el jugador actual con un anillo neón
+                if (index === gameState.currentPlayerIndex) {
+                    token.classList.add('ring-4', 'ring-offset-2', 'ring-offset-gray-900', 'ring-green-400/80'); 
+                }
+
+                token.classList.add(bgColor);
+                token.textContent = player.isAI ? 'IA' : 'H'; 
+                token.title = `${player.name} - Casilla: ${player.position}`;
+
+                const spaceRect = spaceElement.getBoundingClientRect();
+                const tokenSize = 32; 
+                
+                // Posiciones relativas dentro de la casilla para 4 jugadores (más espaciadas)
+                const positions = [
+                    { x: 0.20, y: 0.20 }, 
+                    { x: 0.80, y: 0.20 }, 
+                    { x: 0.20, y: 0.80 }, 
+                    { x: 0.80, y: 0.80 } 
+                ];
+
+                const pos = positions[index % gameState.players.length];
+
+                const boardContainerRect = boardContainer.getBoundingClientRect();
+                const spaceViewportX = spaceRect.left;
+                const spaceViewportY = spaceRect.top;
+                const containerViewportX = boardContainerRect.left;
+                const containerViewportY = boardContainerRect.top;
+
+                const spaceRelativeX = spaceViewportX - containerViewportX;
+                const spaceRelativeY = spaceViewportY - containerViewportY;
+
+                // Ajuste de posición: centrar en el punto deseado de la casilla
+                const posX = spaceRelativeX + (spaceRect.width * pos.x) - (tokenSize * 0.5);
+                const posY = spaceRelativeY + (spaceRect.height * pos.y) - (tokenSize * 0.5);
+                
+                token.style.left = `${posX}px`;
+                token.style.top = `${posY}px`;
+                
+                tokensContainer.appendChild(token);
+            }
+        });
+    };
+
+    // Actualiza la interfaz de control del jugador humano
+    const updateUI = () => {
+        if (!gameState) return;
+
+        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+        const humanPlayer = gameState.players.find(p => p.isAI === false); 
+        const humanPlayerIndex = gameState.players.findIndex(p => p.isAI === false);
+
+        const isHumanTurn = currentPlayer && currentPlayer.isAI === false; 
+        const gameActive = gameState.gameStatus === 'Active';
+        const isTurnLocked = gameState.turnLocked || isGameRunning; 
+        
+        const bgColor = PLAYER_COLORS[humanPlayerIndex % PLAYER_COLORS.length]; 
+
+        // Control de botones
+        rollBtn.classList.toggle('hidden', !gameActive);
+        resetBtn.classList.toggle('hidden', gameActive);
+
+        diceDisplay.textContent = `(${gameState.lastDiceRoll})`;
+        
+        // El botón solo se habilita si es el turno humano, el juego está activo, NO estamos en secuencia automática, y NO está penalizado
+        rollBtn.disabled = !isHumanTurn || !gameActive || isTurnLocked || (humanPlayer && humanPlayer.turnsSkipped > 0);
+        
+        // Mensajes dinámicos del botón
+        if (isTurnLocked || (currentPlayer && currentPlayer.turnsSkipped > 0) || !isHumanTurn) {
+            rollBtn.innerHTML = `<span class="mr-2" data-lucide="loader-2"></span> Esperando turno de ${currentPlayer ? currentPlayer.name : 'otro jugador'}...`;
+            turnStatus.className = 'mt-4 text-center text-md text-red-500 font-bold';
+        } else {
+            rollBtn.innerHTML = `Lanzar Dado <span id="dice-display" class="ml-3 bg-white text-green-700 p-1 px-3 rounded-full font-black text-lg">(${gameState.lastDiceRoll})</span>`;
+            turnStatus.className = 'mt-4 text-center text-md text-green-600 font-bold';
+        }
+
+
+        // Actualización del estado del turno
+        if (!gameActive) {
+            turnStatus.textContent = '¡Juego Terminado! Haz clic en Reiniciar Juego.';
+            rollBtn.disabled = true;
+        } else if (isTurnLocked) {
+             turnStatus.textContent = isHumanTurn && gameState.turnLocked ? '¡Espera! Resuelve la carta.' : `Turno de ${currentPlayer ? currentPlayer.name : 'IA'} en curso...`;
+        } else if (isHumanTurn) {
+             if (humanPlayer.turnsSkipped > 0) {
+                turnStatus.textContent = `¡Turno saltado! Debes esperar ${humanPlayer.turnsSkipped} turno(s).`;
+            } else {
+                turnStatus.textContent = `✅ ¡Es tu turno, ${humanPlayer.name}! Lanza el dado.`;
+            }
+        } else {
+            turnStatus.textContent = `🤖 Turno de ${currentPlayer.name}. La IA está tomando una decisión...`;
+        }
+        
+        // Renderizar Info del Jugador Humano (usando humanPlayer y humanPlayerIndex)
+        if (humanPlayer) {
+            const genesHtml = humanPlayer.genes.length > 0
+                ? humanPlayer.genes.map(gene => 
+                    `<span class="inline-block bg-green-200 text-green-800 text-xs font-semibold px-2 py-1 rounded-full shadow-md">${gene}</span>`
+                  ).join(' ')
+                : '<span class="text-gray-500 text-sm italic">Aún no tiene genes.</span>';
+
+            playerInfoDiv.innerHTML = `
+                <div class="flex items-center mb-4 border-b border-gray-200 pb-3">
+                    <div class="w-10 h-10 rounded-full ${bgColor} mr-3 shadow-xl flex items-center justify-center text-xl font-extrabold text-white border-2 border-white/50">H</div>
+                    <p class="font-extrabold text-2xl text-gray-900">${humanPlayer.name}</p>
+                </div>
+                
+                <div class="space-y-4 text-base">
+                    <div class="p-3 bg-red-50 rounded-lg shadow-md border border-red-300">
+                        <p class="text-sm font-semibold text-gray-600 mb-1 flex items-center"><span class="mr-1 text-red-600" data-lucide="bug"></span>Plaga a Neutralizar:</p>
+                        <p class="font-bold text-xl text-red-700">${humanPlayer.plaga || 'N/A'}</p>
+                    </div>
+
+                    <div class="flex justify-between items-center border-t border-gray-200 pt-3">
+                        <p class="flex items-center text-gray-700"><span class="mr-1 text-gray-500" data-lucide="map-pin"></span>Casilla Actual:</p>
+                        <span class="font-extrabold text-3xl text-green-700">${humanPlayer.position}</span>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-semibold text-gray-600 mb-2 flex justify-between items-center">
+                            <span class="flex items-center"><span class="mr-1 text-green-600" data-lucide="leaf"></span>Genes Reclutados:</span>
+                            <span class="font-bold text-green-600 text-xl">${humanPlayer.genes.length}/3</span>
+                        </p>
+                        <div class="flex flex-wrap gap-2 p-3 bg-white rounded-lg border border-green-300 min-h-[50px] shadow-inner">
+                            ${genesHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center border-t border-gray-200 pt-3 mt-4">
+                        <p class="flex items-center text-gray-700"><span class="mr-1 text-orange-600" data-lucide="flask-conical"></span>Pruebas Superadas:</p>
+                        <span class="font-extrabold text-3xl text-orange-700">${humanPlayer.testsPassed}/2</span>
+                    </div>
+                </div>
+                
+                ${humanPlayer.turnsSkipped > 0 ? 
+                    `<div class="mt-4 p-3 bg-red-100 text-red-700 rounded-lg font-bold text-center flex items-center justify-center border-2 border-red-500 shadow-xl">
+                        <span class="mr-2" data-lucide="alert-triangle"></span> Penalización: ${humanPlayer.turnsSkipped} Turno(s) Restante(s)
+                    </div>` : ''}
+            `;
+        }
+
+        drawTokens(); 
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons(); // Vuelve a renderizar iconos de Lucide
+        }
+    };
+
+
+    // --- LÓGICA DE CARTAS Y ACCIONES ---
+
+    /**
+     * Aplica el efecto de la carta
+     */
+    const applyCardEffect = (player, card) => {
+        let actionMessage = `Carta robada: **${card.title}**. Efecto: `;
+
+        switch (card.type) {
+            case 'Heist':
+                const targets = gameState.players.filter(p => p.id !== player.id && p.genes.length > 0);
+
+                if (targets.length > 0) {
+                    const target = targets[Math.floor(Math.random() * targets.length)];
+                    const stolenGene = target.genes.pop();
+                    player.genes.push(stolenGene);
+                    actionMessage += `¡ÉXITO! Robaste **${stolenGene}** de ${target.name}.`;
+                } else {
+                    actionMessage += `FALLO. Ningún otro jugador tiene genes para robar.`;
+                }
+                break;
+
+            case 'Defense':
+                actionMessage += `¡Defensa activada! Te proteges contra el próximo evento negativo. (No implementado) Vuelve a jugar.`;
+                break;
+
+            case 'Skip':
+                player.turnsSkipped += 1;
+                actionMessage += `¡PENALIZACIÓN! Pierdes el próximo turno.`;
+                break;
+
+            case 'BonusGene':
+                if (player.genes.length < 3) {
+                    const availableGenes = GENES.filter(g => !player.genes.includes(g));
+                    if (availableGenes.length > 0) {
+                        const newGene = availableGenes[Math.floor(Math.random() * availableGenes.length)];
+                        player.genes.push(newGene);
+                        actionMessage += `¡BONO! Recibes el Gen **${newGene}** al instante.`;
+                    } else {
+                        actionMessage += `No hay genes disponibles para recibir. Sigue buscando.`;
+                    }
+                } else {
+                    actionMessage = `¡Ya tienes 3 genes! No recibes más.`;
+                }
+                break;
+        }
+
+        return actionMessage;
+    };
+
+    /**
+     * Muestra el modal de la carta con la animación. 
+     */
+    const displayCard = (card, playerIndex) => {
+        if (!cardModal || !cardContent) return;
+
+        const currentPlayer = gameState.players[playerIndex];
+        const isHumanTurn = currentPlayer.isAI === false;
+        
+        isGameRunning = true; 
+        if(rollBtn) rollBtn.disabled = true;
+
+        const buttonColor = card.color.replace('500', '600'); 
+        const buttonHtml = isHumanTurn ? 
+            `<button id="card-confirm-btn" onclick="handleCardConfirmation()" class="mt-6 w-full py-3 text-lg font-bold text-white ${card.color} hover:${buttonColor} rounded-xl transition duration-150 shadow-lg roll-btn-style">
+                Aplicar Efecto y Continuar
+               </button>` : '';
+
+        // Fondo oscuro y sombra neón para la carta
+        cardContent.className = `w-full max-w-xs mx-auto p-6 text-center transform scale-100 deal-animation ${card.cardBg} rounded-xl text-white shadow-2xl transition duration-500`;
+        
+        cardContent.innerHTML = `
+            <div class="relative bg-gray-900 p-6 rounded-xl shadow-inner border-t-8 ${card.color} text-white">
+                <div class="text-7xl mb-4 p-4 rounded-full mx-auto w-28 h-28 flex items-center justify-center bg-gray-800 text-white font-black shadow-xl border-4 border-white/20">
+                    ${card.icon}
+                </div>
+                <h4 class="text-3xl font-extrabold text-white mb-2 border-b border-white/20 pb-2">${card.title}</h4>
+                <p class="text-base text-gray-300 mt-4">${card.effect}</p>
+                <div class="text-sm font-semibold text-gray-400 mt-4">Activada por: **${currentPlayer.name}**</div>
+            </div>
+            ${buttonHtml}
+        `;
+        
+        cardModal.classList.remove('hidden');
+        cardModal.classList.add('flex');
+
+        // Si es el turno de la IA, aplicamos el efecto después de un retardo
+        if (!isHumanTurn) {
+            setTimeout(handleCardConfirmation, 3500); // 3.5 segundos de visualización para la IA
+        } 
+    };
+
+    /**
+     * Confirma la resolución de la carta y avanza el turno. 
+     */
+    window.handleCardConfirmation = async () => {
+        if (!gameState || !gameState.card || gameState.gameStatus !== 'Active') {
+            hideCardModal();
+            return;
+        }
+        
+        const confirmBtn = document.getElementById('card-confirm-btn');
+        if(confirmBtn) confirmBtn.disabled = true;
+
+        const card = gameState.card;
+        const playerIndex = gameState.currentPlayerIndex;
+        const player = gameState.players[playerIndex];
+
+        // 1. Aplicar el efecto
+        const actionMessage = applyCardEffect(player, card);
+        updateLog(`[CARTA] **${player.name}**: ${actionMessage}`);
+        
+        // 2. Limpiar el estado de la carta y desbloquear el turno
+        gameState.turnLocked = false;
+        gameState.card = null; 
+
+        // 3. Ocultar la carta
+        hideCardModal();
+        updateUI(); 
+
+        // 4. Avanzar al siguiente jugador y continuar el ciclo de turnos
+        gameState.currentPlayerIndex = (playerIndex + 1) % gameState.players.length;
+        
+        // Iniciar la secuencia de turnos (manejar posibles IA o skips)
+        await handleLocalTurnSequence();
+    };
+
+
+    // Realiza la acción de la casilla
+    const executeAction = (player, newPosition) => {
+        const currentZone = getZone(newPosition);
+        let logMessage = `${player.name} aterrizó en la **${ZONE_NAMES[currentZone]}** (Casilla ${newPosition}).`;
+        let actionMessage = '';
+
+        player.zone = currentZone;
+
+        // Si es una casilla de evento, bloqueamos el turno y preparamos la carta
+        if (currentZone === 'Event') {
+            const card = ACTION_CARDS[Math.floor(Math.random() * ACTION_CARDS.length)];
+            
+            gameState.card = card; 
+            gameState.turnLocked = true;
+            
+            logMessage += ` 🎴 ¡Activa una Carta de Mutación!`;
+            updateLog(logMessage);
+            return;
+        }
+
+
+        switch (currentZone) {
+            case 'Problem':
+                if (newPosition === 0) {
+                    actionMessage = `Debe crear una planta resistente a: "**${player.plaga}**".`;
+                }
+                break;
+
+            case 'Lab':
+                if (player.genes.length < 3) {
+                    const availableGenes = GENES.filter(g => !player.genes.includes(g));
+                    if (availableGenes.length > 0) {
+                        const newGene = availableGenes[Math.floor(Math.random() * availableGenes.length)];
+                        player.genes.push(newGene);
+                        actionMessage = `Obtuvo el Gen: "**${newGene}**". (${player.genes.length}/3)`;
+                    } else {
+                         actionMessage = `Ya tiene todos los genes disponibles.`;
+                    }
+                } else {
+                    actionMessage = `¡Genes completos (${player.genes.length}/3).`;
+                }
+                break;
+
+            case 'Test':
+                if (player.genes.length === 3) {
+                    const eventIndex = Math.floor(Math.random() * TESTS.length);
+                    const event = TESTS[eventIndex];
+                    const isSuccess = event.includes('(Éxito)');
+
+                    actionMessage = `Carta de Evento de Prueba: "**${event}**".`;
+
+                    if (isSuccess) {
+                        player.testsPassed++;
+                        actionMessage += ` ✅ **¡Éxito!** (${player.testsPassed}/2 pruebas superadas).`;
+                        if (player.testsPassed >= 2) {
+                            actionMessage += ' Planta lista para el Impacto.';
+                        }
+                    } else {
+                        // Falla en la prueba
+                        player.turnsSkipped = 1; 
+                        actionMessage += ' ❌ ¡Fallo en la prueba! **Pierde el siguiente turno.**';
+                    }
+                } else {
+                    actionMessage = 'Debe obtener **3 genes** antes de realizar pruebas.';
+                }
+                break;
+
+            case 'Impact':
+                if (player.genes.length === 3 && player.testsPassed >= 2) {
+                    const impactRoll = rollDice();
+                    logMessage += ` Lanzó el dado para medir Impacto: ${impactRoll}.`;
+
+                    if (impactRoll >= 4) {
+                        // WIN CONDITION
+                        gameState.gameStatus = 'Over';
+                        actionMessage = `IMPACTO POSITIVO (Roll ${impactRoll})! **¡${player.name} ha ganado!**`;
+                        showModal('¡Misión Cumplida!',
+                            `El **Dr. ${player.name}** es el ganador. Su súper planta resistente a la plaga "${player.plaga}" ha salvado la cosecha.`);
+                    } else {
+                        // Falla en el impacto
+                        player.turnsSkipped = 1;
+                        actionMessage = `IMPACTO NEGATIVO (Roll ${impactRoll}). La planta tuvo un efecto secundario. **Pierde el siguiente turno.**`;
+                    }
+                } else {
+                    actionMessage = 'Debe completar la modificación genética y superar las pruebas (3 Genes, 2 Pruebas) antes de medir el impacto.';
+                }
+                break;
+        }
+
+        updateLog(logMessage + (actionMessage ? ` <span class="font-medium text-gray-700">${actionMessage}</span>` : ''));
+    };
+
+
+    /**
+     * Maneja el movimiento y la acción para un objeto jugador dado. 
+     */
+    const moveAndAct = (player, dice) => {
+        // En esta nueva lógica, el 'salto' ya fue manejado por handleLocalTurnSequence
+        // por lo que si llegamos aquí, el jugador está listo para rodar.
+
+        const oldPosition = player.position;
+        let newPosition = (oldPosition + dice) % TOTAL_SPACES;
+        player.position = newPosition; 
+
+        updateLog(`🎲 **${player.name}** lanzó un **${dice}**. Avanza de ${oldPosition} a ${newPosition}.`);
+
+        // Ejecutar acción (esto puede establecer gameState.turnLocked = true)
+        executeAction(player, newPosition);
+    };
+
+    // --- LÓGICA DE GESTIÓN DE ESTADO LOCAL ---
+
+    const createNewPlayerState = (id, name, isAI) => {
+        return {
+            id: id,
+            name: name,
+            isAI: isAI,
+            position: 0,
+            zone: getZone(0),
+            genes: [],
+            turnsSkipped: 0,
+            testsPassed: 0,
+            plaga: PLAGAS[Math.floor(Math.random() * PLAGAS.length)],
+        };
+    };
+
+    // Inicializa el estado del juego
+    const initializeGame = () => {
+        const initialPlayers = [
+            createNewPlayerState('ai-1', 'Dr. Zumo (IA)', true),
+            createNewPlayerState('ai-2', 'Dr. Vita (IA)', true),
+            createNewPlayerState('ai-3', 'Dr. Giga (IA)', true),
+            createNewPlayerState('human-0', 'Dr. Human', false),
+        ];
+
+        gameState = {
+            players: initialPlayers,
+            currentPlayerIndex: 0,
+            gameStatus: 'Active',
+            lastDiceRoll: 0,
+            turnLocked: false,
+            card: null, 
+        };
+
+        updateLog('Juego inicializado. El turno comienza con la IA.');
+        updateUI();
+        // Iniciar la secuencia automática
+        handleLocalTurnSequence(); 
+    };
+
+    // Función para reiniciar el juego (accesible globalmente)
+    window.resetGame = () => {
+        if (!gameState) return;
+        
+        initializeGame();
+        hideModal();
+    };
+
+    /**
+     * Transacción para actualizar el estado del juego (ahora es solo una asignación local).
+     */
+    const updateGameState = (dice) => {
+        gameState.lastDiceRoll = dice;
+        updateUI(); 
+        return true; 
+    };
+
+    // --- LÓGICA DE TURNOS (HUMANO Y AI) ---
+
+    // Turno del Jugador Humano (accesible globalmente)
+    window.rollDiceAndMove = async () => {
+        if (!gameState || isGameRunning || gameState.gameStatus !== 'Active') return;
+        
+        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+        // El botón solo debería ser clickable si !isAI y turnsSkipped es 0
+        if (currentPlayer.isAI || currentPlayer.turnsSkipped > 0) return; 
+
+        isGameRunning = true; // Bloquea UI
+
+        const dice = rollDice();
+        
+        // 1. Ejecutar movimiento y acción sobre el estado
+        moveAndAct(currentPlayer, dice);
+
+        // 2. Actualizar el dado en el estado
+        updateGameState(dice);
+
+        // 3. Revisar si se activó un bloqueo por carta o si el juego terminó
+        if (gameState.gameStatus !== 'Active') {
+            isGameRunning = false;
+            updateUI();
+            return;
+        }
+
+        if (gameState.turnLocked) {
+            // Se activó una carta, mostrarla y esperar a la confirmación
+            displayCard(gameState.card, gameState.currentPlayerIndex);
+            // El flujo de turno se reanuda en handleCardConfirmation()
+        } else {
+            // 4. Si no hay carta, avanzar el turno y comenzar la secuencia automática
+            gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+            await handleLocalTurnSequence();
+        }
+    };
+
+
+    /**
+     * Lógica de movimiento de la IA
+     */
+    const runAITurn = (player) => {
+        const dice = rollDice();
+        gameState.lastDiceRoll = dice; 
+        moveAndAct(player, dice); 
+        updateGameState(gameState.lastDiceRoll); 
+    };
+
+    /**
+     * Ejecuta los turnos consecutivos de IA/Skips hasta que sea el turno del humano listo para jugar.
+     */
+    const handleLocalTurnSequence = async () => {
+        if (!gameState || gameState.gameStatus !== 'Active') {
+            isGameRunning = false;
+            updateUI();
+            return;
+        }
+        
+        // Lock UI interaction for the duration of the automatic sequence
+        isGameRunning = true; 
+        updateUI(); 
+
+        let currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+        // Loop as long as the current player is an AI OR the current player has skips remaining
+        while (currentPlayer.isAI || currentPlayer.turnsSkipped > 0) {
+            
+            // 1. Handle Skip Turn (for both Human and AI)
+            if (currentPlayer.turnsSkipped > 0) {
+                // Consume skip, log, and advance immediately
+                currentPlayer.turnsSkipped--;
+                updateLog(`⏭️ **${currentPlayer.name}** debe saltar el turno. Quedan ${currentPlayer.turnsSkipped} turno(s).`);
+                
+                gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+                currentPlayer = gameState.players[gameState.currentPlayerIndex];
+                updateUI();
+                await delay(1200); // Visual delay for the skip action
+
+                // If the new current player is the human and is not skipped, exit the loop.
+                if (!currentPlayer.isAI && currentPlayer.turnsSkipped === 0) {
+                     break; 
+                }
+                
+                // Otherwise, continue the loop 
+                continue; 
+            }
+
+            // 2. Handle AI Turn (only reached if currentPlayer.isAI is true and turnsSkipped is 0)
+            updateUI(); // Refresh UI to show AI is thinking
+            await delay(1500); 
+
+            runAITurn(currentPlayer); // Moves, acts, and sets gameState.lastDiceRoll
+
+            if (gameState.gameStatus !== 'Active') break;
+
+            if (gameState.turnLocked) {
+                displayCard(gameState.card, gameState.currentPlayerIndex);
+                isGameRunning = false; // Will be unlocked by card confirmation
+                return; 
+            }
+
+            // 3. Advance to the next player
+            gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+            currentPlayer = gameState.players[gameState.currentPlayerIndex];
+        }
+
+        // The loop is over: it's the human's turn (and they are not skipped)
+        isGameRunning = false;
+        updateUI();
+    };
+
+
+    // --- INICIALIZACIÓN DE LA APLICACIÓN ---
+    document.addEventListener('DOMContentLoaded', () => {
+        drawBoard();
+        
+        // Cachear elementos de UI críticos
+        rollBtn = document.getElementById('roll-dice-btn');
+        resetBtn = document.getElementById('reset-game-btn');
+        turnStatus = document.getElementById('turn-status');
+        diceDisplay = document.getElementById('dice-display');
+        playerInfoDiv = document.getElementById('player-info');
+        cardModal = document.getElementById('card-modal');
+        cardContent = document.getElementById('card-content');
+        
+        initializeGame(); // Inicialización 100% local
+    });
+</script>
+
+</body>
+</html>
